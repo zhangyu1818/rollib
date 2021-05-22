@@ -1,4 +1,5 @@
 import autoprefixer from 'autoprefixer'
+import cssnano from 'cssnano'
 
 import type { PostCSSPluginConf } from 'rollup-plugin-postcss'
 import type { RollibConfigOptions } from './get-rollup-configs'
@@ -13,7 +14,7 @@ const getPostcssConfig = (option: RollibConfigOptions): PostCSSPluginConf => {
     postcss = {}
   }
 
-  const { inject, extract, plugins = [], ...configs } = postcss
+  const { inject, extract = true, plugins = [], minimize, ...configs } = postcss
 
   return {
     inject,
@@ -27,8 +28,12 @@ const getPostcssConfig = (option: RollibConfigOptions): PostCSSPluginConf => {
       autoprefixer({
         remove: false,
       }),
+      minimize &&
+        cssnano({
+          preset: 'default',
+        }),
       ...plugins,
-    ],
+    ].filter(Boolean),
     ...configs,
   }
 }

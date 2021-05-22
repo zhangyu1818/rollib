@@ -14,12 +14,15 @@ export interface UserConfig {
   output?: UserOutput | UserOutput[]
   sourcemap?: boolean | 'inline' | 'hidden'
   replace?: { [key: string]: string | ((id: string) => string) }
-  preserveModules?: boolean // default true
+  preserveModules?: boolean
   less?: any
   sass?: any
   stylus?: any
   babel?: boolean | BabelConfig
   postcss?: boolean | PostCssConfig
+  external?:
+    | (string | RegExp)[]
+    | ((source: string, importer: string | undefined, isResolved: boolean) => boolean | null | undefined)
   extraPlugins?: (OutputPlugin | void)[]
   targets?: string | string[] | { [key: string]: string }
 }

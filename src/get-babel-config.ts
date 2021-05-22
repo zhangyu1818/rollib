@@ -43,21 +43,19 @@ const getBabelConfig = (options: RollibConfigOptions): RollupBabelInputPluginOpt
       require.resolve('@babel/plugin-proposal-optional-chaining'),
       require.resolve('@babel/plugin-proposal-export-default-from'),
       require.resolve('@babel/plugin-proposal-class-properties'),
-      ...(runtimeHelpers
-        ? [
-            [
-              require.resolve('@babel/plugin-transform-runtime'),
-              {
-                useESModules: format === 'es',
-                version: require('@babel/runtime/package.json').version,
-              },
-            ],
-          ]
-        : []),
+      runtimeHelpers && [
+        require.resolve('@babel/plugin-transform-runtime'),
+        {
+          useESModules: format === 'es',
+          version: require('@babel/runtime/package.json').version,
+        },
+      ],
       ...extraPlugins,
-    ],
+    ].filter(Boolean),
     exclude: /\/node_modules\//,
     babelrc: false,
+    compact: false,
+    configFile: false,
     extensions,
   }
 }

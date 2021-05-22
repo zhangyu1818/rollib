@@ -1,7 +1,8 @@
 import { join } from 'path'
-import { existsSync } from 'fs'
-
+import { existsSync, emptydir } from 'fs-extra'
+import createLogger from 'progress-estimator'
 import { getBuildValues } from './build-values'
+
 import type { UserOutput, RollibOutput } from './interface'
 
 export const defaultExtensions = ['.js', '.jsx', '.ts', '.tsx', '.es6', '.es', '.mjs']
@@ -45,3 +46,9 @@ export const getPkg = () => {
   }
   return require(pkgPath)
 }
+
+export const cleanFolder = (path: string) => emptydir(path)
+
+export const logger = createLogger({
+  storagePath: join(__dirname, '.progress-estimator'),
+})

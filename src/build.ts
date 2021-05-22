@@ -1,7 +1,8 @@
 import { rollup } from 'rollup'
+import { basename } from 'path'
 import RegisterConfig from './register-config'
 import getUserConfig from './get-user-config'
-import { getRollibOutput } from './utils'
+import { getRollibOutput, cleanFolder, logger } from './utils'
 import getRollupConfigs from './get-rollup-configs'
 import { setBuildValues } from './build-values'
 
@@ -30,6 +31,13 @@ const build = async (options: BuildOptions) => {
 
   const outputOptions = getRollibOutput(output)
 
+  // clean folders
+  const outputFolders = new Set(outputOptions.map((v) => v.dir))
+  for (const cleanPath of outputFolders) {
+    await logger(cleanFolder(cleanPath), `cleaning ${basename(cleanPath)} folder`)
+  }
+
+  // create rollup config
   const rollupConfig = getRollupConfigs(
     outputOptions.map((outputOption) => ({
       input: entry,
@@ -38,13 +46,21 @@ const build = async (options: BuildOptions) => {
     }))
   )
 
+  await logger(Promise.resolve(), 'creating rollup config')
+
   for (const config of rollupConfig) {
     const { output, ...input } = config
-    const bundle = await rollup({
-      ...input,
-    })
-    await bundle.write(output as RollupOutputOptions)
+    const { format } = output
+    const bundle = await logger(
+      rollup({
+        ...input,
+      }),
+      `creating ${format} build`
+    )
+    await logger(bundle.write(output as RollupOutputOptions), `writing ${format} build`)
   }
+
+  await logger(Promise.resolve(), `build completed`)
 }
 
 export default build

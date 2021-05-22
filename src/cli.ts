@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-const yParser = require('yargs-parser')
-const slash = require('slash2')
+import yParser from 'yargs-parser'
+import slash from 'slash2'
+import { build } from './index'
 
 const args = yParser(process.argv.slice(2))
 
@@ -11,4 +12,4 @@ if (args.v || args.version) {
 }
 
 const cwd = slash(process.cwd())
-require('../lib/build').default({ cwd })
+build({ cwd })

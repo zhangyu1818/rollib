@@ -10,19 +10,20 @@ import url from '@rollup/plugin-url'
 import svgr from '@svgr/rollup'
 
 import getBabelConfig from './get-babel-config'
-import { getPkg, defaultExtensions } from './utils'
+import { getPkg } from './utils'
+import getPostcssConfig from './get-postcss-config'
 
 import type { UserConfig, RollibInput, RollibOutput } from './interface'
-import type { RollupOptions } from 'rollup'
-import getPostcssConfig from './get-postcss-config'
+import type { RollupOptions as BasicRollupOptions, OutputOptions } from 'rollup'
 
 export interface RollibConfigOptions extends Omit<UserConfig, 'entry'>, RollibOutput {
   input: RollibInput
 }
 
+type RollupOptions = Omit<BasicRollupOptions, 'output'> & { output: OutputOptions }
+
 const getRollupConfigs = (options: RollibConfigOptions[]): RollupOptions[] => {
   const pkg = getPkg()
-  const external = [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})]
   return options.map((option) => {
     const {
       input,
@@ -30,19 +31,30 @@ const getRollupConfigs = (options: RollibConfigOptions[]): RollupOptions[] => {
       dir,
       extraPlugins = [],
       replace: replaceArgs,
-      preserveModules = true,
-      sourcemap = false,
-      minimize = false,
+      preserveModules,
+      sourcemap,
+      minimize,
+      external: extraExternal,
       babel: enableBabel = true,
       postcss: enablePostcss = true,
     } = option
+
+    const external: (string | RegExp)[] = [
+      ...Object.keys(pkg.dependencies || {}),
+      ...Object.keys(pkg.peerDependencies || {}),
+    ]
+
+    if (Array.isArray(extraExternal)) {
+      external.push(...extraExternal)
+    }
+
     return {
       input,
       output: {
         format,
         dir,
         sourcemap,
-        // exports: 'default',
+        exports: 'auto',
       },
       external,
       plugins: [
@@ -50,9 +62,11 @@ const getRollupConfigs = (options: RollibConfigOptions[]): RollupOptions[] => {
         svgr(),
         json(),
         // plugin-postcss
-        ...(enablePostcss ? [postcss(getPostcssConfig(option))] : []),
+        enablePostcss && postcss(getPostcssConfig(option)),
         nodeResolve({
-          extensions: defaultExtensions,
+          extensions: ['.mjs', '.js', '.jsx', '.json', '.node'],
+          browser: format === 'es',
+          preferBuiltins: format === 'cjs',
         }),
         replace({
           preventAssignment: true,
@@ -61,6 +75,7 @@ const getRollupConfigs = (options: RollibConfigOptions[]): RollupOptions[] => {
             ...replaceArgs,
           },
         }),
+        // why other bundler use typescript2 ?
         typescript({
           module: 'esnext',
           declaration: true,
@@ -71,10 +86,10 @@ const getRollupConfigs = (options: RollibConfigOptions[]): RollupOptions[] => {
         ...extraPlugins,
         commonjs(),
         // plugin-babel
-        ...(enableBabel ? [babel(getBabelConfig(option))] : []),
+        enableBabel && babel(getBabelConfig(option)),
         // terser
-        ...(minimize ? [terser({ format: { comments: false } })] : []),
-      ],
+        minimize && terser({ format: { comments: false } }),
+      ].filter(Boolean),
       preserveModules,
     }
   })
